@@ -189,5 +189,8 @@ int main(int argc, char **argv) {
     //    capture packets
     pcap_loop(handle, packets_count, packet_handler, NULL);
 
+//    close the handle
+    pcap_close(handle);
+
     return 0;
 }
