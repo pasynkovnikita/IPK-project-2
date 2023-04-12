@@ -151,6 +151,10 @@ int main(int argc, char **argv) {
     struct pcap_pkthdr packet_header;
     int packet_count_limit = 0;
     int timeout_limit = 1500; /* In milliseconds */
+    bpf_u_int32 subnet_mask, ip;
+    struct bpf_program filter;
+    char filter_exp[256] = ""; // filter expression
+
 
     parse_args(argc, argv);
 
@@ -160,16 +164,30 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    lookup_return_code = pcap_lookupnet(
-            device,
-            &ip_raw,
-            &subnet_mask_raw,
-            errbuf
-    );
+    if (pcap_lookupnet(device, &ip, &subnet_mask, errbuf) == -1) {
+        printf("Could not get information for device: %s\n", device);
+        ip = 0;
+        subnet_mask = 0;
+    }
 
     handle = pcap_open_live(device, 1028, 1, timeout_limit, errbuf);
     if (handle == NULL) {
         fprintf(stderr, "Could not open device %s: %s\n", device, errbuf);
+        return 2;
+    }
+
+    if (pcap_datalink(handle) != DLT_EN10MB) {
+        fprintf(stderr, "Device %s doesn't provide Ethernet headers - not supported\n", device);
+        return (2);
+    }
+
+    if (pcap_compile(handle, &filter, filter_exp, 0, ip) == -1) {
+        printf("Bad filter - %s\n", pcap_geterr(handle));
+        return 2;
+    }
+
+    if (pcap_setfilter(handle, &filter) == -1) {
+        printf("Error setting filter - %s\n", pcap_geterr(handle));
         return 2;
     }
 
