@@ -66,7 +66,7 @@ void parse_args(int argc, char **argv) {
                 validate_device(device);
             } else {
                 print_devices();
-                return;
+                exit(0);
             }
         } else if (strcmp(argv[i], "-p") == 0) {
             if (i + 1 < argc) {
@@ -96,7 +96,6 @@ void parse_args(int argc, char **argv) {
                 packets_count = atoi(argv[++i]);
             } else {
                 fprintf(stderr, "Error: -n option requires a number.\n");
-
             }
         } else {
             fprintf(stderr, "Error: invalid argument: %s\n", argv[i]);
@@ -145,11 +144,7 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char
 
 int main(int argc, char **argv) {
 //    inits
-    pcap_t *handle;
     char errbuf[PCAP_ERRBUF_SIZE];
-    const u_char *packet;
-    struct pcap_pkthdr packet_header;
-    int packet_count_limit = 0;
     int timeout_limit = 1500; /* In milliseconds */
     bpf_u_int32 subnet_mask, ip;
     struct bpf_program filter;
