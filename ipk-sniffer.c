@@ -105,7 +105,41 @@ void parse_args(int argc, char **argv) {
     }
 }
 
+// convert time from timeval to string in format: YYYY-MM-DDTHH:MM:SS.MICROSEC+HH:MM
+void get_timestamp(struct timeval time_in_tv) {
+    char buffer[128];
+    char time_buffer[64];
+    time_t time_in_sec = time_in_tv.tv_sec;
+    struct tm *time = localtime(&time_in_sec);
+
+    strftime(time_buffer, sizeof time_buffer, "%FT%T", time);
+    snprintf(buffer, sizeof buffer, "%s.%03ld", time_buffer, time_in_tv.tv_usec / 1000);
+
+// add timezone in HH:MM format
+    char timezone_buffer[6];
+    char timezone_hours[2];
+    char timezone_minutes[2];
+    strftime(timezone_buffer, 10, "%z", time);
+
+    strncpy(timezone_hours, timezone_buffer + 1, 2);
+
+    strncpy(timezone_minutes, timezone_buffer + 3, 2);
+
+    strncat(buffer, "+", 2);
+    strncat(buffer, timezone_hours, 2);
+    strncat(buffer, ":", 2);
+    strncat(buffer, timezone_minutes, 2);
+
+    printf("timestamp: %s\n", buffer);
+}
+
 void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+//  get packet header
+    struct ether_header *eth_header;
+    eth_header = (struct ether_header *) packet;
+
+//  print timestamp
+    get_timestamp(header->ts);
 
 }
 
