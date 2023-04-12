@@ -105,7 +105,7 @@ void parse_args(int argc, char **argv) {
 }
 
 // convert time from timeval to string in format: YYYY-MM-DDTHH:MM:SS.MICROSEC+HH:MM
-void get_timestamp(struct timeval time_in_tv) {
+void print_timestamp(struct timeval time_in_tv) {
     char buffer[128];
     char time_buffer[64];
     time_t time_in_sec = time_in_tv.tv_sec;
@@ -118,6 +118,7 @@ void get_timestamp(struct timeval time_in_tv) {
     char timezone_buffer[6];
     char timezone_hours[2];
     char timezone_minutes[2];
+
     strftime(timezone_buffer, 10, "%z", time);
 
     strncpy(timezone_hours, timezone_buffer + 1, 2);
@@ -131,6 +132,68 @@ void get_timestamp(struct timeval time_in_tv) {
 
     printf("timestamp: %s\n", buffer);
 }
+void print_mac_addresses(uint8_t *ether_shost, uint8_t *ether_dhost) {
+    printf("src mac: %02x:%02x:%02x:%02x:%02x:%02x\n",
+           ether_shost[0], ether_shost[1], ether_shost[2],
+           ether_shost[3], ether_shost[4], ether_shost[5]);
+    printf("dst mac: %02x:%02x:%02x:%02x:%02x:%02x\n",
+           ether_dhost[0], ether_dhost[1], ether_dhost[2],
+           ether_dhost[3], ether_dhost[4], ether_dhost[5]);
+}
+
+void print_packet_data(const u_char *packet, uint32_t size) {
+    printf("\n");
+
+    int symbols_printed = 0;    // number of symbols printed in current line to help print data in the last line
+
+    for (int i = 0; i < size; i++) {
+        // print address in hex
+        if (i % 16 == 0) {
+            printf("0x%04x: ", i);
+            symbols_printed = 0;
+        }
+        symbols_printed++;
+
+        printf("%02x ", packet[i]); // print packet data in hex
+
+        if (i % 16 == 15) {
+            // print packet data in ascii
+            for (int j = i - 15; j <= i; j++) {
+                // spaces after every 8 symbols
+                if (j % 8 == 0 && j != i - 15) {
+                    printf(" ");
+                }
+
+                // print only printable characters
+                if (packet[j] >= 32 && packet[j] <= 126) {
+                    printf("%c", packet[j]);
+                } else {
+                    printf(".");
+                }
+            }
+            printf("\n");
+        }
+    }
+
+    // print packet data in ascii for last line
+    if (symbols_printed % 16 != 0) {
+        for (int i = 0; i < 16 - symbols_printed; i++) {
+            printf("   ");
+        }
+        for (uint32_t i = size - symbols_printed; i < size; i++) {
+            if (i % 8 == 0 && i != size - symbols_printed) {
+                printf(" ");
+            }
+            if (packet[i] >= 32 && packet[i] <= 126) {
+                printf("%c", packet[i]);
+            } else {
+                printf(".");
+            }
+        }
+    }
+
+    printf("\n\n");
+}
 
 void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
 //  get packet header
@@ -138,8 +201,32 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char
     eth_header = (struct ether_header *) packet;
 
 //  print timestamp
-    get_timestamp(header->ts);
+    print_timestamp(header->ts);
 
+//  print source and destination mac addresses
+    print_mac_addresses(eth_header->ether_shost, eth_header->ether_dhost);
+
+//    print frame length
+    printf("frame length: %d bytes\n", header->len);
+
+//  print src and dst IP addresses
+    if (ntohs(eth_header->ether_type) == ETHERTYPE_IP) {
+        char src_ip[INET6_ADDRSTRLEN];
+        char dst_ip[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET, packet + 26, src_ip, INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET, packet + 30, dst_ip, INET6_ADDRSTRLEN);
+        printf("src IP: %s\n", src_ip);
+        printf("dst IP: %s\n", dst_ip);
+    }
+
+//  print ports
+    uint16_t src_port = ntohs(*(uint16_t *) (packet + 34));
+    uint16_t dst_port = ntohs(*(uint16_t *) (packet + 36));
+    printf("src port: %d\n", src_port);
+    printf("dst port: %d\n", dst_port);
+
+//  print payload data
+    print_packet_data(packet, header->len);
 }
 
 int main(int argc, char **argv) {
