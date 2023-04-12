@@ -105,6 +105,10 @@ void parse_args(int argc, char **argv) {
     }
 }
 
+void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+
+}
+
 int main(int argc, char **argv) {
 //    inits
     pcap_t *handle;
@@ -115,6 +119,28 @@ int main(int argc, char **argv) {
     int timeout_limit = 1500; /* In milliseconds */
 
     parse_args(argc, argv);
+
+    pcap_t *handle = pcap_open_live(device, BUFSIZ, 1, 1000, errbuf);
+    if (handle == NULL) {
+        fprintf(stderr, "Error opening device %s: %s\n", device, errbuf);
+        exit(EXIT_FAILURE);
+    }
+
+    lookup_return_code = pcap_lookupnet(
+            device,
+            &ip_raw,
+            &subnet_mask_raw,
+            errbuf
+    );
+
+    handle = pcap_open_live(device, 1028, 1, timeout_limit, errbuf);
+    if (handle == NULL) {
+        fprintf(stderr, "Could not open device %s: %s\n", device, errbuf);
+        return 2;
+    }
+
+    //    capture packets
+    pcap_loop(handle, packets_count, packet_handler, NULL);
 
     return 0;
 }
