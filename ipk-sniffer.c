@@ -10,6 +10,14 @@
 #include <time.h>
 #include <net/ethernet.h>
 
+#define ADD_TO_FILTER_EXPRESSION(expression, filter, ignore_or) \
+        if (strlen(filter) > 0) { \
+            if (!ignore_or) { \
+            strcat(filter, " or "); \
+            } \
+        } \
+        strcat(filter, expression); \
+
 // global variables
 //flags
 int tcp = 0, // flag for tcp packets - will only show tcp packets
@@ -229,6 +237,69 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char
     print_packet_data(packet, header->len);
 }
 
+// create a filter expression for pcap_setfilter
+void set_filter(char *filter_exp) {
+    // add port to filter expression
+    if (port != -1) {
+        char port_str_buf[16];
+        snprintf(port_str_buf, 16, "port %d", port);
+        ADD_TO_FILTER_EXPRESSION(port_str_buf, filter_exp, 0)
+
+
+        // if both tcp and udp are set or both are unset, get both to filter
+        if (tcp && udp || !tcp && !udp) {
+            ADD_TO_FILTER_EXPRESSION(" and (tcp or udp)", filter_exp, 1)
+        }
+            // if only tcp or udp is set, get only that protocol
+        else if (tcp) {
+            ADD_TO_FILTER_EXPRESSION(" and tcp", filter_exp, 1)
+        } else if (udp) {
+            ADD_TO_FILTER_EXPRESSION(" and udp", filter_exp, 1)
+        }
+    } else {
+        // if port is not set just get tcp or udp
+        if (tcp) {
+            ADD_TO_FILTER_EXPRESSION("tcp", filter_exp, 0)
+        }
+        if (udp) {
+            ADD_TO_FILTER_EXPRESSION("udp", filter_exp, 0)
+        }
+    }
+
+    // add icmpv4 to filter expression
+    if (icmp4) {
+        ADD_TO_FILTER_EXPRESSION("icmp", filter_exp, 0)
+    }
+
+    // add icmpv6 echo request/response to filter expression
+    if (icmp6) {
+        ADD_TO_FILTER_EXPRESSION("icmp6 and (icmp6[0] == 128 or icmp6[0] == 129)", filter_exp, 0)
+    }
+
+    // add arp to filter expression
+    if (arp) {
+        ADD_TO_FILTER_EXPRESSION("arp", filter_exp, 0)
+    }
+
+    // add ndp to filter expression
+    if (ndp) {
+        ADD_TO_FILTER_EXPRESSION(
+                "icmp6 and (icmp6[0] == 133 or icmp6[0] == 134 or icmp6[0] == 135 or icmp6[0] == 136 or icmp6[0] == 137 or icmp6[0] == 148 or icmp6[0] == 149)",
+                filter_exp, 0)
+    }
+
+    if (igmp) {
+        ADD_TO_FILTER_EXPRESSION("igmp", filter_exp, 0)
+    }
+
+    if (mld) {
+        ADD_TO_FILTER_EXPRESSION(
+                "icmp6 and (icmp6[0] == 130 or icmp6[0] == 131 or icmp6[0] == 132 or icmp6[0] == 143)",
+                filter_exp, 0)
+    }
+}
+
+
 int main(int argc, char **argv) {
 //    inits
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -239,6 +310,9 @@ int main(int argc, char **argv) {
 
 
     parse_args(argc, argv);
+
+//    create filter expression
+    set_filter(filter_exp);
 
     pcap_t *handle = pcap_open_live(device, BUFSIZ, 1, 1000, errbuf);
     if (handle == NULL) {
