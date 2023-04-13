@@ -140,6 +140,7 @@ void print_timestamp(struct timeval time_in_tv) {
 
     printf("timestamp: %s\n", buffer);
 }
+
 void print_mac_addresses(uint8_t *ether_shost, uint8_t *ether_dhost) {
     printf("src mac: %02x:%02x:%02x:%02x:%02x:%02x\n",
            ether_shost[0], ether_shost[1], ether_shost[2],
@@ -308,7 +309,7 @@ int main(int argc, char **argv) {
     struct bpf_program filter;
     char filter_exp[256] = ""; // filter expression
 
-
+//    parse arguments and get all the flags
     parse_args(argc, argv);
 
 //    create filter expression
@@ -347,7 +348,7 @@ int main(int argc, char **argv) {
         return 2;
     }
 
-    //    capture packets
+//    capture packets
     pcap_loop(handle, packets_count, packet_handler, NULL);
 
 //    close the handle
