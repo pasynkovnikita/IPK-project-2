@@ -9,6 +9,7 @@
 #include <pcap.h>
 #include <time.h>
 #include <net/ethernet.h>
+#include <getopt.h>
 
 // macros to add expression to filter
 // @param expression - expression to add
@@ -89,48 +90,42 @@ void parse_args(int argc, char **argv) {
         exit(0);
     }
 
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--interface") == 0) {
-            if (i + 1 < argc) {
-                device = argv[++i];
+    struct option long_options[] = {
+            {"interface", required_argument, NULL, 'i'},
+            {"tcp",       no_argument, &tcp,       1},
+            {"udp",       no_argument, &udp,       1},
+            {"arp",       no_argument, &arp,       1},
+            {"icmp4",     no_argument, &icmp4,     1},
+            {"icmp6",     no_argument, &icmp6,     1},
+            {"igmp",      no_argument, &igmp,      1},
+            {"mld",       no_argument, &mld,       1},
+            {NULL, 0,                        NULL, 0}
+    };
+    int opt, option_index;
+
+    while ((opt = getopt_long(argc, argv, "i:p:tun:", long_options, &option_index)) != -1) {
+        switch (opt) {
+            case 'i':
+                device = optarg;
                 validate_device(device);
-            } else {
-                print_devices();
-                exit(0);
-            }
-        } else if (strcmp(argv[i], "-p") == 0) {
-            if (i + 1 < argc) {
-                port = atoi(argv[++i]);
+                break;
+            case 'p':
+                port = atoi(optarg);
                 validate_port();
-            } else {
-                fprintf(stderr, "Error: -p option requires a port number.\n");
+                break;
+            case 't':
+                tcp = 1;
+                break;
+            case 'u':
+                udp = 1;
+                break;
+            case 'n':
+                packets_count = atoi(optarg);
+                break;
+            case '?':
                 exit(EXIT_FAILURE);
-            }
-        } else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tcp") == 0) {
-            tcp = 1;
-        } else if (strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--udp") == 0) {
-            udp = 1;
-        } else if (strcmp(argv[i], "--icmp4") == 0) {
-            icmp4 = 1;
-        } else if (strcmp(argv[i], "--icmp6") == 0) {
-            icmp6 = 1;
-        } else if (strcmp(argv[i], "--arp") == 0) {
-            arp = 1;
-        } else if (strcmp(argv[i], "--ndp") == 0) {
-            ndp = 1;
-        } else if (strcmp(argv[i], "--igmp") == 0) {
-            igmp = 1;
-        } else if (strcmp(argv[i], "--mld") == 0) {
-            mld = 1;
-        } else if (strcmp(argv[i], "-n") == 0) {
-            if (i + 1 < argc) {
-                packets_count = atoi(argv[++i]);
-            } else {
-                fprintf(stderr, "Error: -n option requires a number.\n");
-            }
-        } else {
-            fprintf(stderr, "Error: invalid argument: %s\n", argv[i]);
-            exit(EXIT_FAILURE);
+            default:
+                break;
         }
     }
 }
