@@ -9,7 +9,12 @@
 #include <pcap.h>
 #include <time.h>
 #include <net/ethernet.h>
+#include <netinet/ip6.h>
 
+// macros to add expression to filter
+// @param expression - expression to add
+// @param filter - filter to add expression to
+// @param ignore_or - flag to ignore "or"
 #define ADD_TO_FILTER_EXPRESSION(expression, filter, ignore_or) \
         if (strlen(filter) > 0) { \
             if (!ignore_or) { \
@@ -18,7 +23,6 @@
         } \
         strcat(filter, expression); \
 
-// global variables
 //flags
 int tcp = 0, // flag for tcp packets - will only show tcp packets
 udp = 0, // flag for udp packets - will only show udp packets
@@ -33,6 +37,8 @@ port = -1;  // port to filter on
 
 char *device = NULL; // device to capture on
 
+// device validation
+// @param device_name - name of the device
 void validate_device(char *device_name) {
     pcap_if_t *alldevs;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -52,6 +58,7 @@ void validate_device(char *device_name) {
     exit(EXIT_FAILURE);
 }
 
+// print all available devices
 void print_devices() {
     printf("Active devices:\n");
     pcap_if_t *alldevs, *d;
@@ -66,6 +73,9 @@ void print_devices() {
     pcap_freealldevs(alldevs);
 }
 
+// parse command line arguments
+// @param argc - number of arguments
+// @param argv - array of arguments
 void parse_args(int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--interface") == 0) {
@@ -113,6 +123,7 @@ void parse_args(int argc, char **argv) {
 }
 
 // convert time from timeval to string in format: YYYY-MM-DDTHH:MM:SS.MICROSEC+HH:MM
+// @param time_in_tv - time in timeval format
 void print_timestamp(struct timeval time_in_tv) {
     char buffer[128];
     char time_buffer[64];
@@ -150,6 +161,35 @@ void print_mac_addresses(uint8_t *ether_shost, uint8_t *ether_dhost) {
            ether_dhost[3], ether_dhost[4], ether_dhost[5]);
 }
 
+// print IP addresses
+// @param packet - pointer to the beginning of the packet
+// @param ether_type - ether type of the packet
+void print_ip_addresses(u_char *packet, uint16_t ether_type) {
+    // find IP addresses depending on the ether type
+    if (ntohs(ether_type) == ETHERTYPE_IP) {
+        char src_ip[INET_ADDRSTRLEN];
+        char dst_ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, packet + 26, src_ip, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, packet + 30, dst_ip, INET_ADDRSTRLEN);
+        printf("src IP: %s\n", src_ip);
+        printf("dst IP: %s\n", dst_ip);
+    } else if (ntohs(ether_type) == ETHERTYPE_IPV6) {
+        struct ip6_hdr *ipv6_header;
+        ipv6_header = (struct ip6_hdr *)(packet + sizeof(struct ether_header));
+        char src_ip[INET6_ADDRSTRLEN];
+        char dst_ip[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6, &ipv6_header->ip6_src, src_ip, INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET6, &ipv6_header->ip6_dst, dst_ip, INET6_ADDRSTRLEN);
+
+        // Print the source and destination addresses
+        printf("src IP: %s\n", src_ip);
+        printf("dst IP: %s\n", dst_ip);
+    }
+}
+
+// print packet data in hex and ascii
+// @param packet - pointer to packet data
+// @param size - size of packet data
 void print_packet_data(const u_char *packet, uint32_t size) {
     printf("\n");
 
@@ -204,6 +244,11 @@ void print_packet_data(const u_char *packet, uint32_t size) {
     printf("\n\n");
 }
 
+
+// callback function for pcap_loop
+// @param args - user supplied argument
+// @param header - pointer to the pcap_pkthdr structure
+// @param packet - pointer to the packet data
 void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
 //  get packet header
     struct ether_header *eth_header;
@@ -219,14 +264,7 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char
     printf("frame length: %d bytes\n", header->len);
 
 //  print src and dst IP addresses
-    if (ntohs(eth_header->ether_type) == ETHERTYPE_IP) {
-        char src_ip[INET6_ADDRSTRLEN];
-        char dst_ip[INET6_ADDRSTRLEN];
-        inet_ntop(AF_INET, packet + 26, src_ip, INET6_ADDRSTRLEN);
-        inet_ntop(AF_INET, packet + 30, dst_ip, INET6_ADDRSTRLEN);
-        printf("src IP: %s\n", src_ip);
-        printf("dst IP: %s\n", dst_ip);
-    }
+    print_ip_addresses((u_char *)packet, eth_header->ether_type);
 
 //  print ports
     uint16_t src_port = ntohs(*(uint16_t *) (packet + 34));
@@ -239,6 +277,7 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char
 }
 
 // create a filter expression for pcap_setfilter
+// @param filter_exp - filter expression
 void set_filter(char *filter_exp) {
     // add port to filter expression
     if (port != -1) {
