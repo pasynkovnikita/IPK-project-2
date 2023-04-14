@@ -9,7 +9,6 @@
 #include <pcap.h>
 #include <time.h>
 #include <net/ethernet.h>
-#include <netinet/ip6.h>
 
 // macros to add expression to filter
 // @param expression - expression to add
@@ -177,25 +176,23 @@ void print_mac_addresses(uint8_t *ether_shost, uint8_t *ether_dhost) {
 // @param packet - pointer to the beginning of the packet
 // @param ether_type - ether type of the packet
 void print_ip_addresses(u_char *packet, uint16_t ether_type) {
+    char src_ip[INET6_ADDRSTRLEN];
+    char dst_ip[INET6_ADDRSTRLEN];
+
+    uint16_t protocol = ntohs(ether_type);
     // find IP addresses depending on the ether type
-    if (ntohs(ether_type) == ETHERTYPE_IP) {
-        char src_ip[INET_ADDRSTRLEN];
-        char dst_ip[INET_ADDRSTRLEN];
+    if (protocol == ETHERTYPE_IP) {
         inet_ntop(AF_INET, packet + 26, src_ip, INET_ADDRSTRLEN);
         inet_ntop(AF_INET, packet + 30, dst_ip, INET_ADDRSTRLEN);
+    } else if (protocol == ETHERTYPE_IPV6) {
+        inet_ntop(AF_INET6, packet + 22, src_ip, INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET6, packet + 38, dst_ip, INET6_ADDRSTRLEN);
+    } else if (protocol == ETHERTYPE_ARP) {
+        inet_ntop(AF_INET, packet + 28, src_ip, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, packet + 38, dst_ip, INET_ADDRSTRLEN);
+    }
 
-        // Print the source and destination addresses
-        printf("src IP: %s\n", src_ip);
-        printf("dst IP: %s\n", dst_ip);
-    } else if (ntohs(ether_type) == ETHERTYPE_IPV6) {
-        struct ip6_hdr *ipv6_header;
-        ipv6_header = (struct ip6_hdr *) (packet + sizeof(struct ether_header));
-        char src_ip[INET6_ADDRSTRLEN];
-        char dst_ip[INET6_ADDRSTRLEN];
-        inet_ntop(AF_INET6, &ipv6_header->ip6_src, src_ip, INET6_ADDRSTRLEN);
-        inet_ntop(AF_INET6, &ipv6_header->ip6_dst, dst_ip, INET6_ADDRSTRLEN);
-
-        // Print the source and destination addresses
+    if (protocol == ETHERTYPE_IP || protocol == ETHERTYPE_IPV6 || protocol == ETHERTYPE_ARP) {
         printf("src IP: %s\n", src_ip);
         printf("dst IP: %s\n", dst_ip);
     }
