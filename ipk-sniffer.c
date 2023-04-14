@@ -177,13 +177,13 @@ void print_ip_addresses(u_char *packet, uint16_t ether_type) {
     uint16_t protocol = ntohs(ether_type);
     // find IP addresses depending on the ether type
     if (protocol == ETHERTYPE_IP) {
-        inet_ntop(AF_INET, packet + 26, src_ip, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, packet + 26, src_ip, INET_ADDRSTRLEN);   // ip addresses on 26 and 30 bytes of the packet
         inet_ntop(AF_INET, packet + 30, dst_ip, INET_ADDRSTRLEN);
     } else if (protocol == ETHERTYPE_IPV6) {
-        inet_ntop(AF_INET6, packet + 22, src_ip, INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET6, packet + 22, src_ip, INET6_ADDRSTRLEN); // ip addresses on 22 and 38 bytes of the packet
         inet_ntop(AF_INET6, packet + 38, dst_ip, INET6_ADDRSTRLEN);
     } else if (protocol == ETHERTYPE_ARP) {
-        inet_ntop(AF_INET, packet + 28, src_ip, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, packet + 28, src_ip, INET_ADDRSTRLEN);   // ip addresses on 28 and 38 bytes of the packet
         inet_ntop(AF_INET, packet + 38, dst_ip, INET_ADDRSTRLEN);
     }
 
