@@ -85,6 +85,11 @@ void print_devices() {
 // @param argc - number of arguments
 // @param argv - array of arguments
 void parse_args(int argc, char **argv) {
+    // exit if no arguments were given
+    if (argc == 1) {
+        exit(0);
+    }
+
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--interface") == 0) {
             if (i + 1 < argc) {
