@@ -153,9 +153,7 @@ void print_timestamp(struct timeval time_in_tv) {
     char timezone_minutes[2];
 
     strftime(timezone_buffer, 10, "%z", time);
-
     strncpy(timezone_hours, timezone_buffer + 1, 2);
-
     strncpy(timezone_minutes, timezone_buffer + 3, 2);
 
     strncat(buffer, "+", 2);
@@ -185,6 +183,8 @@ void print_ip_addresses(u_char *packet, uint16_t ether_type) {
         char dst_ip[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, packet + 26, src_ip, INET_ADDRSTRLEN);
         inet_ntop(AF_INET, packet + 30, dst_ip, INET_ADDRSTRLEN);
+
+        // Print the source and destination addresses
         printf("src IP: %s\n", src_ip);
         printf("dst IP: %s\n", dst_ip);
     } else if (ntohs(ether_type) == ETHERTYPE_IPV6) {
@@ -258,7 +258,6 @@ void print_packet_data(const u_char *packet, uint32_t size) {
     printf("\n\n");
 }
 
-
 // callback function for pcap_loop
 // @param args - user supplied argument
 // @param header - pointer to the pcap_pkthdr structure
@@ -298,7 +297,6 @@ void set_filter(char *filter_exp) {
         char port_str_buf[16];
         snprintf(port_str_buf, 16, "port %d", port);
         ADD_TO_FILTER_EXPRESSION(port_str_buf, filter_exp, 0)
-
 
         // if both tcp and udp are set or both are unset, get both to filter
         if (tcp && udp || !tcp && !udp) {
