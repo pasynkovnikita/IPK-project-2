@@ -198,6 +198,37 @@ void print_ip_addresses(u_char *packet, uint16_t ether_type) {
     }
 }
 
+// print ports
+// @param packet - pointer to the beginning of the packet
+// @param ether_type - ether type of the packet
+void print_ports(const u_char *packet, uint16_t ether_type) {
+    char src_port[6];
+    char dst_port[6];
+
+    uint16_t protocol = ntohs(ether_type);
+    // find ports depending on the ether type
+    if (protocol == ETHERTYPE_IP) {
+        // print ports only if IP protocol is TCP or UDP
+        if (packet[23] == IPPROTO_TCP || packet[23] == IPPROTO_UDP) {   // byte 23 is IPv4 protocol
+            snprintf(src_port, 6, "%d", ntohs(*(uint16_t *) (packet + 34)));    // ports on bytes 34 and 36
+            snprintf(dst_port, 6, "%d", ntohs(*(uint16_t *) (packet + 36)));
+
+            printf("src port: %s\n", src_port);
+            printf("dst port: %s\n", dst_port);
+        }
+    } else if (protocol == ETHERTYPE_IPV6) {
+        // print ports only if IP protocol is TCP or UDP
+        if (packet[20] == IPPROTO_TCP || packet[20] == IPPROTO_UDP) {   // byte 20 is IPv6 protocol
+            snprintf(src_port, 6, "%d", ntohs(*(uint16_t *) (packet + 54)));    // ports on bytes 54 and 56
+            snprintf(dst_port, 6, "%d", ntohs(*(uint16_t *) (packet + 56)));
+
+            printf("src port: %s\n", src_port);
+            printf("dst port: %s\n", dst_port);
+        }
+    }
+}
+
+
 // print packet data in hex and ascii
 // @param packet - pointer to packet data
 // @param size - size of packet data
@@ -277,10 +308,7 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char
     print_ip_addresses((u_char *) packet, eth_header->ether_type);
 
 //  print ports
-    uint16_t src_port = ntohs(*(uint16_t *) (packet + 34));
-    uint16_t dst_port = ntohs(*(uint16_t *) (packet + 36));
-    printf("src port: %d\n", src_port);
-    printf("dst port: %d\n", dst_port);
+    print_ports((u_char *) packet, eth_header->ether_type);
 
 //  print payload data
     print_packet_data(packet, header->len);
