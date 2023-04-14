@@ -25,15 +25,15 @@
 
 //flags
 int tcp = 0, // flag for tcp packets - will only show tcp packets
-udp = 0, // flag for udp packets - will only show udp packets
-arp = 0, // flag for arp frames
-icmp4 = 0, // flag for ICMPv4 packets
-icmp6 = 0, // flag for ICMPv6 echo request/response
-ndp = 0, // flag for ICMPv6 NDP packets
-igmp = 0, // flag for IGMP packets
-mld = 0, // flag for mld packets
-packets_count = 1, // number of packets to capture - if not specified equals to 1
-port = -1;  // port to filter on
+    udp = 0, // flag for udp packets - will only show udp packets
+    arp = 0, // flag for arp frames
+    icmp4 = 0, // flag for ICMPv4 packets
+    icmp6 = 0, // flag for ICMPv6 echo request/response
+    ndp = 0, // flag for ICMPv6 NDP packets
+    igmp = 0, // flag for IGMP packets
+    mld = 0, // flag for mld packets
+    packets_count = 1, // number of packets to capture - if not specified equals to 1
+    port = -1;  // port to filter on
 
 char *device = NULL; // device to capture on
 
@@ -56,6 +56,14 @@ void validate_device(char *device_name) {
     pcap_freealldevs(alldevs);
     fprintf(stderr, "Error: device %s does not exist.\n", device_name);
     exit(EXIT_FAILURE);
+}
+
+// port validation
+void validate_port() {
+    if (port < 0 || port > 65535) {
+        fprintf(stderr, "Error: invalid port number: %d", port);
+        exit(EXIT_FAILURE);
+    }
 }
 
 // print all available devices
@@ -89,6 +97,7 @@ void parse_args(int argc, char **argv) {
         } else if (strcmp(argv[i], "-p") == 0) {
             if (i + 1 < argc) {
                 port = atoi(argv[++i]);
+                validate_port();
             } else {
                 fprintf(stderr, "Error: -p option requires a port number.\n");
                 exit(EXIT_FAILURE);
@@ -175,7 +184,7 @@ void print_ip_addresses(u_char *packet, uint16_t ether_type) {
         printf("dst IP: %s\n", dst_ip);
     } else if (ntohs(ether_type) == ETHERTYPE_IPV6) {
         struct ip6_hdr *ipv6_header;
-        ipv6_header = (struct ip6_hdr *)(packet + sizeof(struct ether_header));
+        ipv6_header = (struct ip6_hdr *) (packet + sizeof(struct ether_header));
         char src_ip[INET6_ADDRSTRLEN];
         char dst_ip[INET6_ADDRSTRLEN];
         inet_ntop(AF_INET6, &ipv6_header->ip6_src, src_ip, INET6_ADDRSTRLEN);
@@ -264,7 +273,7 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char
     printf("frame length: %d bytes\n", header->len);
 
 //  print src and dst IP addresses
-    print_ip_addresses((u_char *)packet, eth_header->ether_type);
+    print_ip_addresses((u_char *) packet, eth_header->ether_type);
 
 //  print ports
     uint16_t src_port = ntohs(*(uint16_t *) (packet + 34));
