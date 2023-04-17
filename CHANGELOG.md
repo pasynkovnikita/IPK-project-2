@@ -25,12 +25,12 @@ Then we use `pcap_compile` function to compile the filter expression and `pcap_s
 Then we start capturing packets with the `pcap_loop` function. It uses our function `packet_handler` as a callback
 function:
 
-        void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
+    void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 
 It shows all the packet data, and for each type of data we have a function:
 
-- `print_timestamp(struct timeval time_in_tv)` - prints out the time of the packet
-- `print_mac_addresses(uint8_t *ether_shost, uint8_t *ether_dhost)` - prints out the source and destination MAC
+- `print_timestamp(struct timeval time_in_tv)` - prints out the time of the packet.
+- `print_mac_addresses(uint8_t *ether_shost, uint8_t *ether_dhost)` - prints out the source and destination MAC.
   addresses
 - `print_ip_addresses(u_char *packet, uint16_t ether_type)` - prints out the source and destination IP addresses. For
   different protocols IP addresses are stored in different places in the packet header, so we have to check the protocol
@@ -39,4 +39,23 @@ It shows all the packet data, and for each type of data we have a function:
   TCP, UDP and ARP
   protocols port numbers are stored in different places in the packet header, so we have to check the protocol type.
   Every other protocol does not have port numbers, so we don't print anything.
-- 
+- `print_packet_data(const u_char *packet, uint32_t size)` - prints out the payload of the packet.
+
+## Used libraries
+
+The program uses following libraries:
+
+```
+stdio.h
+stdlib.h
+string.h
+unistd.h
+sys/types.h
+sys/socket.h
+netinet/in.h
+arpa/inet.h
+pcap.h
+time.h
+net/ethernet.h
+getopt.h
+```
