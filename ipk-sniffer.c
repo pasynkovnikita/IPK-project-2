@@ -68,6 +68,7 @@ void validate_port() {
 
 // print all available devices
 void print_devices() {
+    printf("\n");
     printf("Active devices:\n");
     pcap_if_t *alldevs, *d;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -87,11 +88,12 @@ void print_devices() {
 void parse_args(int argc, char **argv) {
     // exit if no arguments were given
     if (argc == 1) {
+        print_devices();
         exit(0);
     }
 
     struct option long_options[] = {
-            {"interface", required_argument, NULL, 'i'},
+            {"interface", optional_argument, NULL, 'i'},
             {"tcp",       no_argument, &tcp,       1},
             {"udp",       no_argument, &udp,       1},
             {"arp",       no_argument, &arp,       1},
@@ -103,10 +105,15 @@ void parse_args(int argc, char **argv) {
     };
     int opt, option_index;
 
-    while ((opt = getopt_long(argc, argv, "i:p:tun:", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "i::p:tun:", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'i':
-                device = optarg;
+                // if -i is given without argument, print all available devices and exit
+                if (argv[optind] == NULL) {
+                    print_devices();
+                    exit(0);
+                }
+                device = argv[optind];
                 validate_device(device);
                 break;
             case 'p':
