@@ -78,6 +78,7 @@ void print_devices() {
     for (d = alldevs; d; d = d->next) {
         printf("%s\n", d->name);
     }
+    printf("\n");
     pcap_freealldevs(alldevs);
 }
 
