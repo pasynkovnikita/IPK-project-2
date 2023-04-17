@@ -109,8 +109,13 @@ void parse_args(int argc, char **argv) {
             case 'i':
                 // if -i is given without argument, print all available devices and exit
                 if (argv[optind] == NULL) {
-                    print_devices();
-                    exit(0);
+                    if (argc == 2) {
+                        print_devices();
+                        exit(0);
+                    } else {
+                        fprintf(stderr, "Error: no device specified.\n");
+                        exit(EXIT_FAILURE);
+                    }
                 }
                 device = argv[optind];
                 validate_device(device);
@@ -133,6 +138,11 @@ void parse_args(int argc, char **argv) {
             default:
                 break;
         }
+    }
+
+    if (device == NULL) {
+        fprintf(stderr, "Error: no device specified.\n");
+        exit(EXIT_FAILURE);
     }
 }
 
