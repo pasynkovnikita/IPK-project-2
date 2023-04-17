@@ -69,7 +69,6 @@ void validate_port() {
 // print all available devices
 void print_devices() {
     printf("\n");
-    printf("Active devices:\n");
     pcap_if_t *alldevs, *d;
     char errbuf[PCAP_ERRBUF_SIZE];
     if (pcap_findalldevs(&alldevs, errbuf) == -1) {
