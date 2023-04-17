@@ -41,6 +41,10 @@ addresses in the packet headers:
 
 ## Usage
 
+To compile the program, run the following command:
+
+    make
+
 The program is launched with the following command:
 
     ./ipk-sniffer [-i interface | --interface interface] {-p port [--tcp|-t] [--udp|-u]} [--arp] [--icmp4] [--icmp6] [--igmp] [--mld] {-n num}
