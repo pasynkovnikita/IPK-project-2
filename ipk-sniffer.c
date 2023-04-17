@@ -61,7 +61,7 @@ void validate_device(char *device_name) {
 // port validation
 void validate_port() {
     if (port < 0 || port > 65535) {
-        fprintf(stderr, "Error: invalid port number: %d", port);
+        fprintf(stderr, "Error: invalid port number: %d\n", port);
         exit(EXIT_FAILURE);
     }
 }
